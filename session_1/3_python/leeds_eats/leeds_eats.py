@@ -5,19 +5,42 @@ import sqlite3
 # ==================================================
 
 def total_customers(conn):
-    pass
+    cursor = conn.execute("""
+    select count() as total_customers from customers
+""")
+    result = cursor.fetchone()
+    print(f"Total Customers: {result['total_customers']}")
 
 
 def customer_signup_range(conn):
-    pass
-
+    cursor = conn.execute("""
+    select min(signup_date),max(signup_date) from customers
+""")
+    result = cursor.fetchone()
+    print(f"Earliest Signup Date: {result[0]}")
+    print(f"Latest Signup Date: {result[1]}")
 
 def order_summary_stats(conn):
-    pass
-
+    cursor = conn.execute("""
+    select count(),avg(order_total),min(order_total),max(order_total) from orders
+""")
+    result = cursor.fetchone()
+    print(f"Total Orders: {result[0]}")
+    print(f"Average Order Total: £{result[1]:.2f}")
+    print(f"Minimum Order Total: £{result[2]:.2f}")
+    print(f"Maximum Order Total: £{result[3]:.2f}")
 
 def driver_summary(conn):
-    pass
+    cursor = conn.execute("""
+    select count() from drivers
+""")
+    result = cursor.fetchone()
+    print(f"Total Drivers: {result[0]}")
+    cursor = conn.execute("""
+    select driver_name,hire_date from drivers
+""")
+    for driver in cursor.fetchall():
+        print(f"Driver: {driver['driver_name']:<25} Hire Date: {driver['hire_date']}")
 
 
 # ==================================================
@@ -25,15 +48,41 @@ def driver_summary(conn):
 # ==================================================
 
 def orders_per_customer(conn):
-    pass
+    cursor = conn.execute("""
+    select customer_name,count() as orders, sum(order_total) as total_spent from orders
+    left join customers on orders.customer_id = customers.customer_id
+    group by orders.customer_id
+""")
+    for customer in cursor.fetchall():
+        print(f"Customer: {customer['customer_name']:<25} Orders: {customer['orders']:<10} Total Spent: £{f'{customer['total_spent']:.2f}':<15}")
 
 
 def driver_workload(conn):
-    pass
+    cursor = conn.execute("""
+    select driver_name,count() as deliveries from deliveries
+    right join drivers on deliveries.driver_id = drivers.driver_id
+    group by drivers.driver_id
+""")
+    for driver in cursor.fetchall():
+        print(f"Driver: {driver['driver_name']:<25} Deliveries: {driver['deliveries']}")
 
 
 def delivery_lookup_by_id(conn, order_id):
-    pass
+    cursor = conn.execute("""
+    select customer_name,order_total,delivery_date,driver_name from orders
+    left join customers on orders.customer_id=customers.customer_id
+    left join deliveries on orders.order_id=deliveries.order_id
+    left join drivers on deliveries.driver_id=drivers.driver_id
+    where orders.order_id=?
+""",(order_id,))
+    result = cursor.fetchone()
+    if result:
+        print(f"Customer Name: {result['customer_name']}")
+        print(f"Order Total: £{result['order_total']:.2f}")
+        print(f"Delivery Date: {result['delivery_date']}")
+        print(f"Driver Name: {result['driver_name']}")
+    else:
+        print(f"No delivery found for Order ID: {order_id}")
 
 
 # ==================================================
